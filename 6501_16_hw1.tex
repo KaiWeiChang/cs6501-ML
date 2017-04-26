@@ -1,0 +1,289 @@
+\input{cs6501}
+\usepackage{graphicx}
+\usepackage{subfigure}
+\usepackage{amsmath}
+\usepackage{amssymb}
+%\usepackage{qtree}
+\usepackage{epsfig}
+\usepackage{enumerate}
+\usepackage{color}
+\usepackage{algorithmic}
+\usepackage{hyperref}
+
+%\usepackage{parskip}
+
+\sloppy
+\parskip = 0.5cm
+
+\newcommand{\ignore}[1]{}
+\newcommand{\pp}{\noindent}
+\newcommand{\ov}{\overline}
+\newcommand{\bb}[1]{{\bf #1}}
+\renewcommand{\labelitemii}{\tiny$\circ$}
+
+\newcommand{\question}[1]{#1}%{}
+%\newcommand{\answer}[2]{#1}
+%\input{answerdef.tex}
+%\newcommand{\answer}[2]{#1}
+\newcommand{\answer}[2]{{
+\vspace{10pt} 
+\color{red}{#2}
+\vspace{10pt}
+}
+}
+\newcommand{\comment}[1]{}
+
+
+\oddsidemargin 0in
+\evensidemargin 0in
+\textwidth 6.5in
+\topmargin -0.5in
+\textheight 9.0in
+
+\begin{document}
+\setlength{\unitlength}{1mm}
+
+\thispagestyle{plain}
+\newpage
+\assignment{2017}{1}{Feb 11, 2017}{Feb 18, 2017}
+
+\begin{itemize}
+\item Feel free to talk to other members of the class in doing the homework. You should, however,
+write down your solution yourself.  Please try to keep the solution brief and clear.
+
+\item Please use Piazza first if you have questions about the homework. Also feel free to come to office hours.
+
+\item Please, no handwritten solutions. You will submit your solution manuscript as a single pdf file. Please use \LaTeX to typeset your solutions.
+
+\item The homework is due at 11:59 PM on the due date. We will be using
+Collab for collecting the homework assignments. Please submit your solution manuscript as a pdf file and your code as a zip file.  Please do NOT hand in a hard copy of your write-up.
+Contact the TAs if you are having technical difficulties in 
+submitting the assignment. 
+\end{itemize}
+
+
+
+\section{Binary Classification} 
+A {\em linear program} can be stated as follows:
+\begin{definition}
+Let 
+$A$ be an $m \times n$ real-valued matrix,
+$\vec{b} \in \mathbb{R}^m$, and $\vec{c} \in \mathbb{R}^n$.
+Find a $\vec{t} \in \mathbb{R}^n$, that minimizes the linear function
+\begin{eqnarray*}
+  & & z(\vec{t}) = \vec{c}~^T \vec{t} \\
+\textrm{subject to} & & A \vec{t} \geq \vec{b}
+\end{eqnarray*}
+\end{definition}
+
+In the linear programming terminology, $\vec{c}$ is often referred
+to as the {\em cost vector} and $z(\vec{t})$ is referred to as the {\em objective
+function}.\footnote{Note that you don't need
+to really know how to solve a linear program since you can use Matlab or Scipy to obtain the
+solution (although you may wish to brush up on Linear Algebra). }
+We can use this framework to define the problem of learning a linear
+discriminant function.\footnote{This discussion closely
+  parallels the linear programming representation found in 
+  {\em Pattern Classification}, by Duda, Hart, and Stork.}
+
+\textbf{The Learning Problem:}\footnote{Note that the notation used in the
+Learning Problem is
+{\bf unrelated} to the one used in the Linear Program definition. You may want to
+figure out the correspondence.} \hspace{2mm}
+Let $\vec{x_1}, \vec{x_2}, \ldots, \vec{x_m}$ 
+represent $m$ samples, where each sample $\vec{x_i}\in \mathbb{R}^n$ is an $n$-dimensional
+vector, and $\vec{y} \in \{-1, 1\}^m$ is an $m \times 1$
+vector representing the respective labels of each of the $m$ samples. Let
+$\vec{w} \in \mathbb{R}^n$ be an $n \times 1$ vector representing the weights of the
+linear discriminant function, and $\theta$ be the threshold value. 
+
+We {\em predict} $\vec{x_i}$ to be a {\em positive} example if
+$\vec{w}^T \vec{x_i} + \theta \geq 0$. On the other hand, we {\em predict}
+$\vec{x_i}$ to be a {\em negative} example if $\vec{w}^T \vec{x_i} + \theta < 0$.
+
+We hope that the learned linear function can separate the data set.  
+That is, for the true labels we hope
+\begin{equation}
+\label{eq:separable}
+y_i = \begin{cases}
+ 1 & \mbox{if } \vec{w}^T \vec{x_i} + \theta \ge 0 \\
+-1 & \mbox{if } \vec{w}^T \vec{x_i} + \theta < 0. \\
+\end{cases}
+\end{equation}
+%\begin{equation}
+%\textrm{if } \left\{
+%\begin{array}{cc}
+%\vec{w}^T \vec{x_i} + \theta \geq 0, & y_i = 1 \\
+%\vec{w}^T \vec{x_i} + \theta < 0, & y_i = -1
+%\end{array}
+%\right. \label{eq:separable}
+%\end{equation}
+
+In order to find a good linear separator, we propose the following linear program:
+\begin{eqnarray}
+  \min_{\vec{w}, \theta, \delta} & & \delta  \label{eq:lin_prog_discriminant_obj}\\
+ \textrm{subject to } & & y_i(\vec{w}^T \vec{x_i} + \theta) \geq 1 - \delta, \qquad \forall (\vec{x_i},y_i) \in D  \label{eq:lin_prog_discriminant_constraint}\\
+  & & \delta \geq 0  \label{eq:lin_prog_discriminant_bound}
+\end{eqnarray}
+where $D$ is the data set of all training examples.
+\begin{enumerate}
+
+  
+  \item [a.] {\em[10 points]} A data set
+      $D=\{(\vec{x_i},y_i)\}_{i=1}^m$ that satisfies 
+      condition (\ref{eq:separable}) above is called
+      {\em linearly separable}. 
+      {\bf Show that the data set
+      $D$ is linearly separable 
+      if and only if there exists
+      a hyperplane ($\vec{w'}, \theta'$) that satisfies 
+      condition
+      \eqref{eq:lin_prog_discriminant_constraint} with $\delta = 0$} 
+	  (Need a hint?\footnote{{\bf Hint:} Assume that $D$ is linearly separable. $D$ is a
+      finite set, so it has a positive example that is {\em closest}
+      to the hyperplane among all positive examples. Similarly, there
+      is a negative example that is {\em closest} to the hyperplane
+      among negative examples. Consider their distances and use them
+      to show that condition
+      (\ref{eq:lin_prog_discriminant_constraint}) holds. Then show the
+      other direction.
+	  }).
+      Conclude that $D$ is linearly separable iff the optimal solution
+      to the linear program
+      [\eqref{eq:lin_prog_discriminant_obj} to \eqref{eq:lin_prog_discriminant_bound}]
+      attains $\delta = 0$.
+      {\bf What can we say about the linear separability of the data set
+      if there exists a hyperplane that satisfies condition
+      \eqref{eq:lin_prog_discriminant_constraint} with $\delta > 0$?}
+
+  \item [b.] {\em [5 points]} {\bf Show that there is a
+      trivial optimal solution for the following linear
+      program:}
+    \begin{eqnarray*}
+      \min_{\vec{w},\theta,\delta} & & \delta  \\
+%\min_{\delta} & & \delta  \\
+      \textrm{subject to } & & y_i(\vec{w}^T \vec{x_i} + \theta) \geq - \delta, \qquad \forall (x_i,y_i) \in D \\
+      && \delta \geq 0  \\
+    \end{eqnarray*}
+	{\bf Show the optimal solution and use it to (very briefly)
+	explain why we chose to formulate the linear program as
+	[\eqref{eq:lin_prog_discriminant_obj} to \eqref{eq:lin_prog_discriminant_bound}]
+	instead.}
+
+\item [c.] {\em [10 points]} 
+Let $\vec{x_1} \in \mathbb{R}^n$, $\vec{x_1}^T =
+\begin{bmatrix}
+  1 & 1 & \ldots & 1
+\end{bmatrix}$ and $y_1 = 1$. 
+Let
+$\vec{x_2} \in \mathbb{R}^n$, $\vec{x_2}^T =
+\begin{bmatrix}
+  -1 & -1 & \ldots & -1
+\end{bmatrix}$ and $y_2 = -1$.
+The data set $D$ is defined as
+\begin{equation*}
+    D = \{ (\vec{x_1},y_1), (\vec{x_2},y_2)\}.
+\end{equation*}
+Consider the formulation in
+[\eqref{eq:lin_prog_discriminant_obj} to \eqref{eq:lin_prog_discriminant_bound}]
+applied to
+$D$. {\bf Show the set of all possible optimal solutions (solve this problem by hand)}.
+  
+  \end{enumerate}
+
+\section{Multiclass Classification} 
+In this problem set, we will derive, implement, and test an SGD method for a multi-class SVM classification model, and then we will compare it with the one-vs-all approach. 
+
+Given a data set $D = \{x_i, y_i\}_{i=1}^N$ with $K$ classes, the multi-class SVM can be written as the following  unconstrained optimization problem:
+\begin{equation}
+\label{eq:multiclass2}
+    \min_{w=\{w_k\}} \quad \frac{1}{2} \sum_{k=1}^K w_k^T w_k + C \sum_{i=1}^N \left( \max_{k=1\ldots K} \left(\Delta(y_i, k)+w_k^Tx_i\right)-w^T_{y_i} x_i\right),
+\end{equation}
+where  $w_k$ is the weight vector for class $k$, ($x_i$, $y_i$) is the $i^{th}$ instance and 
+\begin{equation*}
+\Delta(y,k) = 
+    \begin{cases}
+    1 & \mbox{if } y\neq k,\\
+    0 & \mbox{otherwise}.
+    \end{cases}
+\end{equation*}
+
+To derive the SGD  algorithm, we first need to rewrite the objective function in Eq. \eqref{eq:multiclass2} into the form of $\sum_i g_i(w)$:
+\begin{equation*}
+\label{eq:multiclass}
+    \min_{w=\{w_k\}} \quad \sum^N_{i=1} \left(\frac{1}{2N} \sum^K_{k=1} w_k^T w_k + C  \left( \max_{k=1\ldots K} \left(\Delta(y_i, k)+w_k^Tx_i\right)-w^T_{y_i} x_i\right)\right),
+\end{equation*}
+so that 
+\begin{equation*}
+    g_i(w) =  \left(\frac{1}{2N} \sum^K_{k=1} w_k^T w_k + C  \left( \max_{k=1\ldots K} \left(\Delta(y_i, k)+w_k^Tx_i\right)-w^T_{y_i} x_i\right)\right). 
+\end{equation*}
+
+Now let's derive the sub-gradient of $g_i(w)$.
+Consider $\partial g_i(w)/ \partial w_k$, the partial sub-gradient of the first term of $g_i(w)$ is $w_k/N$.
+Regarding the second term, we have to consider several cases. 
+Let $$\tilde{y} = \arg\max_k \left(\Delta(y_i, k)+w^T_k x_i\right)$$. If $\tilde{y} = k$ and $y_i = k$, the partial sub-gradient of the second term is $C(x - x) = 0$. Therefore, 
+$\partial g_i(w)/ \partial w_k = w_k/N$ when $\tilde{y} = k$ and $y_i = k$. 
+
+How about other cases?
+
+\begin{enumerate}
+\item [a.] {[15 points]} Please complete the following formulation
+\begin{equation}
+\label{eq:grad}
+\frac{\partial g_i(w)}{\partial w_k} = \begin{cases}
+w_k/     \hspace{5cm} & \mbox{if } \tilde{y} = k \mbox{ and } y_i = k\\
+\\
+       \underline{\hspace{5cm}} &\mbox{if } \tilde{y} \neq k \mbox{ and } y_i = k\\
+       \\
+       \underline{\hspace{5cm}}  &\mbox{if } \tilde{y} = k \mbox{ and } y_i \neq k\\
+       \\
+        \underline{\hspace{5cm}} &\mbox{if } \tilde{y} \neq k \mbox{ and } y_i \neq k\\
+\end{cases}
+\end{equation}
+\item [b.]  {[15 points]} The SGD algorithm runs as follows:  
+
+\begin{algorithmic}
+\STATE \FOR {epoch = 0 $\ldots$ T}
+\FOR {$(\vec{x_i}, y_i)$ in $D$}
+ \FOR {k= 1 $\ldots$ K}
+   \STATE {$w_k\leftarrow w_k - \eta \  \partial g_i(w_k) / \partial w_k$}
+\ENDFOR
+\ENDFOR
+\ENDFOR
+\end{algorithmic}
+$\eta$ is the step size. The step size is a user specified parameter. Here, we can set it with a default value 0.01.
+
+
+Plug Eq. \eqref{eq:grad} in, we have:
+\begin{algorithmic}
+\STATE \FOR {epoch = 0 $\ldots$ T}
+\FOR {$(\vec{x_i}, y_i)$ in $D$}
+\STATE { $\tilde{y} = \arg\max_k \left(\Delta(y_i, k)+w^T_k x_i\right)$}
+\FOR {k= 1 $\ldots$ K}
+\STATE
+   \STATE {$w_k\leftarrow w_k - \eta\underline{\hspace{5cm}}$}
+   
+\ENDFOR
+ \IF {$\tilde{y} \neq {y_i}$}
+ \STATE
+   \STATE {$w_{y_i}\leftarrow w_{y_i} - \eta \underline{\hspace{5cm}}$}
+    \STATE
+    \STATE {$w_{\tilde{y}}\leftarrow w_{\tilde{y}} - \eta \underline{\hspace{5cm}}$}
+
+\ENDIF
+\ENDFOR
+\ENDFOR
+\end{algorithmic}
+Please, complete the above algorithm.
+
+\item[c.] {[20points]} Let's implement a baseline one-vs-all  multiclass algorithm and conduct experiments on MNIST dataset~\footnote{http://yann.lecun.com/exdb/mnist/}.  We provide a basic code framework at \url{https://github.com/uvanlp/HW1} to facilitate the implementation. However, you're welcomed to write your own code. If you want to use the code we provided, implement the one-vs-all algorithm in the main function of one\_vs\_all\_with\_data\_reader.py. Then, conduct cross-validation to find the best C for all underlying binary classifier (assume the same C is used for all the binary classifiers). Note: You can use the LinearSVC class at Scikit-Learn,  \url{http://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html}, to implement the underlying classifiers.
+
+Report the best C and the final accuracy.
+
+\item[d.] {[25points]} Implement the SGD algorithm for multi-class SVM. We provide `multiclass\_svm.py' as the code framework. However, you have to implement the update rules. Conduct cross-validation to find the best C and report the result on the test set.\footnote{ To test if your algorithm implementation is correct, you can check if the objective function value of the SGD algorithm matches with the score from liblinear  https://www.csie.ntu.edu.tw/~cjlin/liblinear. Use the following command line to train a multi-class SVM model
+``./train  -s 4 -B -1 -e 0.01 -C 1 train.data'' with C=1.
+There is a function in the sample code allows you to print data in liblinear format. Check if the objective function values of your implementation is the same as that of liblinear on a small subset  (e.g., run on only the first 100 samples).}
+\item[e.] {[0-10 points]} We will give bonus points for additional  experiments.
+\end{enumerate}
+
+\end{document}

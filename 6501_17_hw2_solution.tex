@@ -1,0 +1,224 @@
+\input{cs6501}
+\usepackage{graphicx}
+\usepackage{subfigure}
+\usepackage{amsmath}
+\usepackage{amssymb}
+%\usepackage{qtree}
+\usepackage{epsfig}
+\usepackage{enumerate}
+\usepackage{color}
+\usepackage{algorithmic}
+\usepackage{hyperref}
+
+%\usepackage{parskip}
+
+\sloppy
+\parskip = 0.5cm
+
+\newcommand{\ignore}[1]{}
+\newcommand{\pp}{\noindent}
+\newcommand{\ov}{\overline}
+\newcommand{\bb}[1]{{\bf #1}}
+\renewcommand{\labelitemii}{\tiny$\circ$}
+
+\newcommand{\question}[1]{#1}%{}
+%\newcommand{\answer}[2]{#1}
+%\input{answerdef.tex}
+%\newcommand{\answer}[2]{#1}
+\newcommand{\answer}[2]{{
+\vspace{10pt} 
+\color{red}{#2}
+\vspace{10pt}
+}
+}
+\newcommand{\comment}[1]{}
+
+
+\oddsidemargin 0in
+\evensidemargin 0in
+\textwidth 6.5in
+\topmargin -0.5in
+\textheight 9.0in
+
+\begin{document}
+\setlength{\unitlength}{1mm}
+
+\thispagestyle{plain}
+\newpage
+\assignment{2017}{2}{Mar 4, 2017}{Mar 15, 2017}
+
+\begin{itemize}
+\item Feel free to talk to other members of the class in doing the homework. You should, however,
+write down your solution yourself.  Please try to keep the solution brief and clear.
+
+\item Please use Piazza first if you have questions about the homework. Also feel free to come to office hours.
+
+\item Please, no handwritten solutions. You will submit your solution manuscript as a single pdf file. Please use \LaTeX to typeset your solutions.
+
+\item The homework is due at 11:59 PM on the due date. We will be using
+Collab for collecting the homework assignments. Please submit your solution manuscript as a pdf file and your code as a zip file.  Please do NOT hand in a hard copy of your write-up.
+Contact the TAs if you are having technical difficulties in 
+submitting the assignment. 
+\end{itemize}
+
+
+
+\section{Training algorithm for Conditional Random Field} 
+
+In this problem set, let's derive the SGD algorithm for CRF. You can refer to the note at \url{http://www.cs.columbia.edu/~mcollins/loglinear.pdf}. However, please write down the answer in your own words.
+
+Recall that in a CRF model, we have input $x$, and a set of possible labels, $y$. We model the conditional probability $P(y\mid x)$ as
+\begin{equation}
+    P(y\mid x, w) = \frac{\exp(w^T\phi(x,y))}{\sum_{y'} \exp(w^T\phi(x,y')},
+\end{equation}
+where $w$ is the weight vector and $\phi(x,y)$ is a feature vector.
+
+Given a set of training examples $\{(x_i, y_i)\}_{i=1}^N$, the log-likelihood of the model is $L(w) = \sum_{i=1}^N \log P(y_i\mid x_i, w)$. Then, the model parameters $w$ can be estimated by the maximum likelihood principle,
+\begin{equation}
+\label{eq:crf}
+    w^* = \arg\max_{w} L(w).
+\end{equation}
+Recall that to derive the SGD  algorithm for CRF, we first need to rewrite the objective function in Eq. \eqref{eq:crf} into the form of $\sum_i g_i(w)$.
+
+\begin{itemize}
+\item[{\bf Question A}][10points]:  Write down the formulation of $g_i(w)$?
+{\color{blue}
+\begin{equation*}
+\begin{split}
+g_i(w) = log \ p(y_i\mid x_i, w) & = log \ \frac{\exp(w^T\phi(x_i,y_i))}{\sum_{y} \exp(w^T\phi(x_i,y)} \\
+& = w^T\phi(x_i,y_i) - log \ {\sum_{y \in Y} \exp(w^T\phi(x_i,y)}
+\end{split}
+\end{equation*}
+}
+
+\item[ {\bf Question B}][20points]: What is the gradient of  $g_i(w)$? Please provide complete derivation steps. Hint: I showed the formulation of $\nabla g_i(w)$ in my slides.
+{\color{blue}
+\begin{equation*}
+L(w) = \sum_{i} g_i(w) = \sum_{i} \ [w^T\phi(x_i,y_i) -  log \ {\sum_{y \in Y} \exp(w^T\phi(x_i,y)}]
+\end{equation*}
+\begin{equation*}
+\begin{split}
+\nabla g_i(w) & = \phi(x_i,y_i) - \frac{\sum_{y \in Y} \exp(w^T\phi(x_i,y)
+\phi(x_i,y)}{\sum_{y' \in Y} \exp(w^T\phi(x_i,y')} \\
+& = \phi(x_i,y_i) - \sum_{y \in Y} p(y \mid x_i, w) \phi(x_i,y) \\
+& = \phi(x_i,y_i) - E_{y\sim p(y \mid x_i, w)} \phi(x_i,y)
+\end{split}
+\end{equation*}
+}
+
+During the training, we need to evaluate the partition function $\sum_{y'} \exp(w^T\phi(x,y'))$. For an arbitrary output structure, the computational complexity of evaluating the partition function may be exponential in the size of output. However, if the output follow a specific structure, such as a tree or a chain, we can derive a dynamic programming algorithm to compute the partition function.  
+
+Let's assume the output structure 
+$y=y_1, y_2, y_3, \ldots, y_n$ is a sequence, where each output variable $y_i\in {1,2,\ldots m}$.
+We define the CRF model using the following factor graph:
+
+\includegraphics[width=0.8\linewidth]{factor}
+
+That is, $w^T \phi(x,y) = \sum_{i=1}^{n} w^T\phi(x,y_{i-1}, y_i)$.
+
+\item[{\bf Question C}][30points]: Design an efficent algorithm that can compute $\sum_{y'} \exp(w^T\phi(x,y')) = \sum_{y'} \Pi_{i=1}^{n} \exp(w^T \phi(x, y'_{i-1}, y'_i))$ in $O(nm^2)$ time. Hint: the algorithm is similar to the Viterbi algorithm introduced in Page 32 of \url{http://www.cs.virginia.edu/~kc2wc/teaching/SL17/06-sequence.pdf}.
+
+{\color{blue}
+The algorithm is similar to the Forward algorithm for HMM.
+
+Inputs: Sequence length $n$, input $x$, model $w$. We define $\alpha(i,j), i\in \{1,2,\ldots n\}, j\in \{1, 2, \ldots m\}$ in the following to help the computations. 
+
+Initialization: For all $y \in \{1,2,\ldots, m\}$,
+\begin{equation*}
+\alpha(1, y) = \sum_{y} exp(w^T \phi(x, y_0, y_1 = y)),
+\end{equation*}
+where $y_0$ is a special state representing the begin of the sequence. 
+
+Recursion: For all $j \in \{2 \ldots n\}, y \in \{1,\ldots, m\}$,
+\begin{equation*}
+\begin{split}
+\alpha(j, y)
+& = \sum_{y' } \alpha(j - 1, y') \times exp(w^T \phi(x, y', y))
+\end{split}
+\end{equation*}
+
+Final Calculation:
+\begin{equation*}
+Z = \sum_{y \in S} \alpha(n, y)
+\end{equation*}
+
+The total computation will take $O(nm^2)$ time.
+}
+
+\iffalse
+{\color{blue}
+We can solve this problem using a variant of the Viterbi algorithm. We are assuming, the set of all possible state is Y which refers to the sequence $y_1, y_2, y_3, \ldots, y_n$.
+
+$\bullet$ Initialization: for $y \in Y$ 
+
+\begin{equation*}
+      \pi [1, y] = w^T \cdot \phi(x, y_0, y)
+\end{equation*}
+
+where $y_0$ is a special ``initial'' state.
+
+$\bullet$ For $j = 2 \ldots n$, $y = 1 \ldots m$:
+
+\begin{equation*}
+      \pi [j, y] = \max_{y' \in Y} \ [ \pi [j-1, y'] + w \cdot \phi(x, y', y) ]
+\end{equation*}
+
+We then have
+\begin{equation*}
+      \sum_{j=1}^m \  w \cdot \phi(x, y_{j-1}, y_j) = \max_{y} \pi [m, y]
+\end{equation*}
+
+This algorithm runs in $O(nm^2)$ time.
+}
+\fi
+
+\end{itemize}
+\section{Integer Linear Programming} 
+In this problem set, we will derive linear inequalities to represent constraints in integer linear programs. 
+Recall the example in page 33 in the slides of Lecture 7. We have three three output variables that can take value either $A$ or $B$. The inference problem can be represented as an integer linear programming problem in page 34.  We can use $I_{y_i=A}+I_{y_i=B}=1$ to represent the constraint that $y_i$ can either be a A or a B. We can also use $I_{y_1=A}+I_{y_2=A}+I_{y_3=A}  \geq 1$ to represent either $y_1=A$, $y_2 =A$ or  $y_3 =A$.
+
+Note that the constraints in integer linear programming need to be a linear equality or a linear inequality. That is, the constraints are  in a form of $a_1 x_1+ a_2 x_2 + \ldots a_n x_n = b$,  $a_1 x_1+ a_2 x_2 + \ldots a_n x_n \leq b$, or 
+$a_1 x_1+ a_2 x_2 + \ldots a_n x_n < b$, where
+$x_1, x_2, \ldots, x_n$ are variables and $a_1, a_2, \ldots a_n, b$ are coefficients ($\forall i \quad a_i\in R, b\in R$).  Answer the following questions. You can use truth table to verify your answers.
+\begin{itemize}
+\item[{\bf Question A}][5 points]: How can we represent the constraint $y_1=A$?
+
+{\color{blue}{$I_{y_1=A} = 1 $} }
+
+\item [{\bf Question B}][5 points]: How can we represent the constraint $y_1 \neq A$ (i.e, $\neg (y_1=A)$)?
+
+{\color{blue}{$I_{y_1=A} = 0 $} }
+ 
+\item [{\bf Question C}][5 points]: How can we represent
+the constraint $y_1=A$ and $y_2 =A$ (i.e, $y_1=A\wedge y_2=A$)? 
+
+{\color{blue}{$I_{y_1=A} + I_{y_2=A} > 1$} }
+
+\item [{\bf Question D}][5 points]: How can we represent if $y_1=A$ then $y_2 =A$ (i.e., $(y_1=A) \rightarrow (y_2=A)$)?
+Hint: Recall that $x\rightarrow y$ is equivalent to $\neg x \vee y$. 
+
+{\color{blue}{$(1 - I_{y_1=A}) + I_{y_2=A} \geq 1$ \\
+or $ I_{y_2=A} - I_{y_1=A} \geq 0 $} }\\
+
+\item [{\bf Question E}][10 points]: How can we represent
+if $y_{12}=AA$ then $y_1 =A$ and $y_2=A$ (i.e., ($y_{12}=AA) \rightarrow (y_1=A) \wedge (y_2 = A)$)?
+
+Hint: You can use the property  $x\vee (y \wedge z) \equiv (x\vee y) \wedge (x \vee z)$.
+
+{\color{blue}{$(1 - I_{y_{12}=AA}) + (I_{y_1=A} + I_{y_2=A} - 1 ) \geq 1 $ \\
+or $ I_{y_1=A} + I_{y_2=A} - I_{y_12=AA} \geq 1 $
+} }\\
+
+{\color{blue} Alternative Solution: \\
+{$(1 - I_{y_12=AA} + I_{y_1=A}) + (1 - I_{y_12=AA} + I_{y_2=A}) \geq 2 $
+} }\\
+
+\item [ {\bf Question F}][10 points]: How can we represent
+if  $y_1 =A$ and $y_2=A$ then $y_{12}=AA$ (i.e., $(y_1=A) \wedge (y_2 = A) \rightarrow (y_{12}=AA)$)?
+Hint: Use De Morgan's Law  $\neg (x \wedge y) \equiv \neg x \vee \neg y$.
+
+{\color{blue}{$ ( (1 - I_{y_1=A}) + (1- I_{y_2=A}) )+ I_{y_12=AA}  \geq 1 $ \\
+or $ I_{y_12=AA} - I_{y_1=A} - I_{y_2=A} \geq -1 $} }\\
+
+\end{itemize}
+\end{document}

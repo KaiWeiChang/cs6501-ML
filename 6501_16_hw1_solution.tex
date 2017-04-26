@@ -1,0 +1,411 @@
+\input{cs6501}
+\usepackage{graphicx}
+\usepackage{subfigure}
+\usepackage{amsmath}
+\usepackage{amssymb}
+%\usepackage{qtree}
+\usepackage{epsfig}
+\usepackage{enumerate}
+\usepackage{color}
+\usepackage{algorithmic}
+\usepackage{hyperref}
+\usepackage{color}
+
+%\usepackage{parskip}
+
+\sloppy
+\parskip = 0.5cm
+
+\newcommand{\ignore}[1]{}
+\newcommand{\pp}{\noindent}
+\newcommand{\ov}{\overline}
+\newcommand{\bb}[1]{{\bf #1}}
+\renewcommand{\labelitemii}{\tiny$\circ$}
+
+\newcommand{\question}[1]{#1}%{}
+%\newcommand{\answer}[2]{#1}
+%\input{answerdef.tex}
+%\newcommand{\answer}[2]{#1}
+\newcommand{\answer}[2]{{
+\vspace{10pt} 
+\color{red}{#2}
+\vspace{10pt}
+}
+}
+\newcommand{\comment}[1]{}
+
+
+\oddsidemargin 0in
+\evensidemargin 0in
+\textwidth 6.5in
+\topmargin -0.5in
+\textheight 9.0in
+
+\begin{document}
+\setlength{\unitlength}{1mm}
+
+\thispagestyle{plain}
+\newpage
+\assignment{2017}{1}{Feb 11, 2017}{Feb 18, 2017}
+
+\begin{itemize}
+\item Feel free to talk to other members of the class in doing the homework. You should, however,
+write down your solution yourself.  Please try to keep the solution brief and clear.
+
+\item Please use Piazza first if you have questions about the homework. Also feel free to come to office hours.
+
+\item Please, no handwritten solutions. You will submit your solution manuscript as a single pdf file. Please use \LaTeX to typeset your solutions.
+
+\item The homework is due at 11:59 PM on the due date. We will be using
+Collab for collecting the homework assignments. Please submit your solution manuscript as a pdf file and your code as a zip file.  Please do NOT hand in a hard copy of your write-up.
+Contact the TAs if you are having technical difficulties in 
+submitting the assignment. 
+\end{itemize}
+
+
+
+\section{Binary Classification} 
+A {\em linear program} can be stated as follows:
+\begin{definition}
+Let 
+$A$ be an $m \times n$ real-valued matrix,
+$\vec{b} \in \mathbb{R}^m$, and $\vec{c} \in \mathbb{R}^n$.
+Find a $\vec{t} \in \mathbb{R}^n$, that minimizes the linear function
+\begin{eqnarray*}
+  & & z(\vec{t}) = \vec{c}~^T \vec{t} \\
+\textrm{subject to} & & A \vec{t} \geq \vec{b}
+\end{eqnarray*}
+\end{definition}
+
+In the linear programming terminology, $\vec{c}$ is often referred
+to as the {\em cost vector} and $z(\vec{t})$ is referred to as the {\em objective
+function}.\footnote{Note that you don't need
+to really know how to solve a linear program since you can use Matlab or Scipy to obtain the
+solution (although you may wish to brush up on Linear Algebra). }
+We can use this framework to define the problem of learning a linear
+discriminant function.\footnote{This discussion closely
+  parallels the linear programming representation found in 
+  {\em Pattern Classification}, by Duda, Hart, and Stork.}
+
+\textbf{The Learning Problem:}\footnote{Note that the notation used in the
+Learning Problem is
+{\bf unrelated} to the one used in the Linear Program definition. You may want to
+figure out the correspondence.} \hspace{2mm}
+Let $\vec{x_1}, \vec{x_2}, \ldots, \vec{x_m}$ 
+represent $m$ samples, where each sample $\vec{x_i}\in \mathbb{R}^n$ is an $n$-dimensional
+vector, and $\vec{y} \in \{-1, 1\}^m$ is an $m \times 1$
+vector representing the respective labels of each of the $m$ samples. Let
+$\vec{w} \in \mathbb{R}^n$ be an $n \times 1$ vector representing the weights of the
+linear discriminant function, and $\theta$ be the threshold value. 
+
+We {\em predict} $\vec{x_i}$ to be a {\em positive} example if
+$\vec{w}^T \vec{x_i} + \theta \geq 0$. On the other hand, we {\em predict}
+$\vec{x_i}$ to be a {\em negative} example if $\vec{w}^T \vec{x_i} + \theta < 0$.
+
+We hope that the learned linear function can separate the data set.  
+That is, for the true labels we hope
+\begin{equation}
+\label{eq:separable}
+y_i = \begin{cases}
+ 1 & \mbox{if } \vec{w}^T \vec{x_i} + \theta \ge 0 \\
+-1 & \mbox{if } \vec{w}^T \vec{x_i} + \theta < 0. \\
+\end{cases}
+\end{equation}
+%\begin{equation}
+%\textrm{if } \left\{
+%\begin{array}{cc}
+%\vec{w}^T \vec{x_i} + \theta \geq 0, & y_i = 1 \\
+%\vec{w}^T \vec{x_i} + \theta < 0, & y_i = -1
+%\end{array}
+%\right. \label{eq:separable}
+%\end{equation}
+
+In order to find a good linear separator, we propose the following linear program:
+\begin{eqnarray}
+  \min_{\vec{w}, \theta, \delta} & & \delta  \label{eq:lin_prog_discriminant_obj}\\
+ \textrm{subject to } & & y_i(\vec{w}^T \vec{x_i} + \theta) \geq 1 - \delta, \qquad \forall (\vec{x_i},y_i) \in D  \label{eq:lin_prog_discriminant_constraint}\\
+  & & \delta \geq 0  \label{eq:lin_prog_discriminant_bound}
+\end{eqnarray}
+where $D$ is the data set of all training examples.
+\begin{enumerate}
+
+  
+  \item [a.] {\em[10 points]} A data set
+      $D=\{(\vec{x_i},y_i)\}_{i=1}^m$ that satisfies 
+      condition (\ref{eq:separable}) above is called
+      {\em linearly separable}. 
+      {\bf Show that the data set
+      $D$ is linearly separable 
+      if and only if there exists
+      a hyperplane ($\vec{w'}, \theta'$) that satisfies 
+      condition
+      \eqref{eq:lin_prog_discriminant_constraint} with $\delta = 0$} 
+	  (Need a hint?\footnote{{\bf Hint:} Assume that $D$ is linearly separable. $D$ is a
+      finite set, so it has a positive example that is {\em closest}
+      to the hyperplane among all positive examples. Similarly, there
+      is a negative example that is {\em closest} to the hyperplane
+      among negative examples. Consider their distances and use them
+      to show that condition
+      (\ref{eq:lin_prog_discriminant_constraint}) holds. Then show the
+      other direction.
+	  }).
+      Conclude that $D$ is linearly separable iff the optimal solution
+      to the linear program
+      [\eqref{eq:lin_prog_discriminant_obj} to \eqref{eq:lin_prog_discriminant_bound}]
+      attains $\delta = 0$.
+      {\bf What can we say about the linear separability of the data set
+      if there exists a hyperplane that satisfies condition
+      \eqref{eq:lin_prog_discriminant_constraint} with $\delta > 0$?}
+
+
+{
+\color{red}
+  The solution to (a.) contains three parts. \\
+     
+      \noindent \textbf{(i) Linear Separability $\Rightarrow \delta = 0$:}
+
+
+The separability property implies that there exists a hyperplane $\vec{v}^T \vec{x} + \rho$ such that
+    \begin{equation*}
+      \min_{\substack{(\vec{x},y)\in D \\ y=1}} (\vec{v}^T \vec{x} + \rho) \quad \geq \quad 0 \quad > \quad \max_{\substack{(\vec{x},y)\in D \\ y=-1}} (\vec{v}^T \vec{x} +\rho)
+    \end{equation*}
+    Let $\vec{x_i}$ to be the positive sample that is closest to the hyperplane
+    $\vec{v}^T\vec{x} + \rho$, and 
+    \begin{equation*}
+      p^{+} = \min_{\substack{(\vec{x},y)\in D \\ y=1}} (\vec{v}^T \vec{x} +
+      \rho) = (\vec{v}^T \vec{x_i} + \rho)
+  \end{equation*}
+Similarly, let $\vec{x_j}$ to be
+    the negative sample that is closest to the hyperplane $\vec{v}^T\vec{x} + \rho$, and
+    \begin{equation*}
+    p^{-} = \max_{\substack{(\vec{x},y)\in D \\ y=-1}} (\vec{v}^T \vec{x} + \rho) = (\vec{v}^T
+    \vec{x_j} + \rho)
+  \end{equation*}
+    Note that from the definition of separability, we know that $p^{+}$ and $p^{-}$ exist
+    and $p^{+} \geq 0 > p^{-}$. 
+
+    {\bf Step 1: Shifting the hyperplane.}
+    Since $p^{+} \geq 0 > p^{-}$, there exist $\eta \geq 0$ such that
+    $p^{+} - \eta \geq 0 > p^{-} - \eta$. Hence, for some values of $\eta$,
+    the hyperplane $\vec{v}^{T} \vec{x} + \rho - \eta = 0$ also separates $D$.
+    We will find the value of $\eta$ for which the hyperplane  
+    $\vec{v}^{T} \vec{x} + \rho - \eta = 0$ is equi-distant from $\vec x_{i}$ and $\vec x_{j}$
+    and separates $D$.
+
+    The value of $\eta$ can be obtained as follows:
+    \begin{equation}
+      \begin{split}
+        \frac{|\vec{v}^{T} \vec{x_i} + \rho - \eta|}{\|\vec{v}\|} &= 
+        \frac{|\vec{v}^{T} \vec{x_j} + \rho - \eta|}{\|\vec{v}\|}, \\
+        \vec{v}^T \vec{x_i} + \rho - \eta &= -(\vec{v}^T \vec{x_j} + \rho - \eta),\\
+        p^{+} - \eta &= - p^{-} + \eta.
+      \end{split}
+    \end{equation}
+    This implies that $\eta = \frac{p^{+} + p^{-}}{2}$.
+    We can easily verify that for such $\eta$,
+    $p^{+}-\eta \geq 0 > p^{-} - \eta$,
+    and hence the resulting hyperplane $\vec{v}^{T} \vec{x} + \rho - \eta = 0$
+    separates $D$.
+
+      { \bf Step 2: Normalizing the hyperplane.} 
+      With the new hyperplane \\ 
+      $\vec{v}^T
+      \vec{x} + \rho - \eta = 0$,
+      \begin{eqnarray*}
+        \min_{\substack{(\vec{x},y)\in D \\ y=1}} (\vec{v}^T \vec{x} + \rho - \eta) & = & \frac{p^{+}-p^{-}}{2} \\
+      \textrm{and } \qquad 
+        \max_{\substack{(\vec{x},y)\in D \\ y=-1}} (\vec{v}^T \vec{x} + \rho - \eta) & = & \frac{p^{-}-p^{+}}{2} \\
+        \therefore y(\vec{v}^T \vec{x} + \rho - \eta) & \geq & \frac{p^{+}-p^{-}}{2} \qquad \forall (\vec{x},y) \in D
+      \end{eqnarray*}
+
+      Given that $p^{+}>p^{-}$ and $\eta = \frac{p^{+}+p^{-}}{2}$, by setting $\vec{w} =
+      \frac{\vec{v}}{\eta}$, $\theta = \frac{\rho - \eta}{\eta}$, and $\delta=0$,
+      \begin{equation*}
+        y(\vec{w}^T \vec{x} + \theta) \geq 1 - \delta, \quad \forall (\vec{x},y) \in D
+      \end{equation*}
+      \noindent \textbf{(ii) Linear Separability $\Leftarrow \delta = 0$:}
+
+      If there exists a hyperplane $\vec{w}^T \vec{x} + \theta$ such that
+      \begin{equation*}
+        y(\vec{w}^T \vec{x} + \theta) \geq 1, \quad \forall (\vec{x},y) \in D
+      \end{equation*}
+      It is trivial to show that
+      \begin{eqnarray*}
+        (\vec{w}^T \vec{x} + \theta) \geq 1 & \geq &  0, \qquad \forall (\vec{x},y)\in D, y=1 \\
+      \textrm{and } \qquad (\vec{w}^T \vec{x} + \theta) \leq -1 & < &  0, \qquad \forall (\vec{x},y)\in D, y=-1
+      \end{eqnarray*}
+
+	\noindent \textbf{(iii) When $\delta>0$:}
+
+      Now consider the value of $\delta$. Note that if $1-\delta > 0$, we can apply similar argument and show that the data set is linear separable. If $\delta \geq 1$, we are not sure if the data set is separable or not. If the {\em minimal} $\delta \geq 1$, then the data set is not separable.
+
+
+}
+
+  \item [b.] {\em [5 points]} {\bf Show that there is a
+      trivial optimal solution for the following linear
+      program:}
+    \begin{eqnarray*}
+      \min_{\vec{w},\theta,\delta} & & \delta  \\
+%\min_{\delta} & & \delta  \\
+      \textrm{subject to } & & y_i(\vec{w}^T \vec{x_i} + \theta) \geq - \delta, \qquad \forall (x_i,y_i) \in D \\
+      && \delta \geq 0  \\
+    \end{eqnarray*}
+	{\bf Show the optimal solution and use it to (very briefly)
+	explain why we chose to formulate the linear program as
+	[\eqref{eq:lin_prog_discriminant_obj} to \eqref{eq:lin_prog_discriminant_bound}]
+	instead.}
+	
+	{\color{red}
+	
+The trivial solution is
+      \begin{equation*}
+        \vec{w} = \vec{0}, \quad \theta=0, \quad \delta = 0.
+      \end{equation*}
+      This solution is optimal because 1) the constraints are
+      satisfied, and 2) zero is the best value we can get for
+      $\delta$.  We do not use this formulation because the solver
+      might give us this optimal solution which does not give us a
+      hyperplane at all. Note that there exists other optimal solutions for
+      this formulation.
+	
+	}
+
+\item [c.] {\em [10 points]} 
+Let $\vec{x_1} \in \mathbb{R}^n$, $\vec{x_1}^T =
+\begin{bmatrix}
+  1 & 1 & \ldots & 1
+\end{bmatrix}$ and $y_1 = 1$. 
+Let
+$\vec{x_2} \in \mathbb{R}^n$, $\vec{x_2}^T =
+\begin{bmatrix}
+  -1 & -1 & \ldots & -1
+\end{bmatrix}$ and $y_2 = -1$.
+The data set $D$ is defined as
+\begin{equation*}
+    D = \{ (\vec{x_1},y_1), (\vec{x_2},y_2)\}.
+\end{equation*}
+Consider the formulation in
+[\eqref{eq:lin_prog_discriminant_obj} to \eqref{eq:lin_prog_discriminant_bound}]
+applied to
+$D$. {\bf Show the set of all possible optimal solutions (solve this problem by hand)}.
+  
+  \end{enumerate}
+
+{
+\color{red}
+Given that there are only two samples in the data set, the data
+      set is separable. Therefore, the optimal $\delta$ is 0. 
+      Now our job becomes finding $\vec{w}$ and $\theta$ that satisfy the following constraints:
+      \begin{eqnarray*}
+        w_1 + w_2  \ldots +w_n  + \theta  & \geq & 1 \\
+        -(-w_1 - w_2  \ldots -w_n  + \theta) & \geq & 1 \\
+	& & \\
+      \therefore \qquad 
+        w_1 + w_2 + \ldots + w_n  & \geq & 1 + | \theta|
+      \end{eqnarray*}
+      
+      Hence, $(\vec{w},\theta,\delta)$ is the optimal solution
+      if $\delta = 0$ and $w_1 + w_2 + \ldots + w_n  \geq  1+ | \theta|$.    
+}
+
+\section{Multiclass Classification} 
+In this problem set, we will derive, implement, and test an SGD method for a multi-class SVM classification model, and then we will compare it with the one-vs-all approach. 
+
+Given a data set $D = \{x_i, y_i\}_{i=1}^N$ with $K$ classes, the multi-class SVM can be written as the following  unconstrained optimization problem:
+\begin{equation}
+\label{eq:multiclass2}
+    \min_{w=\{w_k\}} \quad \frac{1}{2} \sum_{k=1}^K w_k^T w_k + C \sum_{i=1}^N \left( \max_{k=1\ldots K} \left(\Delta(y_i, k)+w_k^Tx_i\right)-w^T_{y_i} x_i\right),
+\end{equation}
+where  $w_k$ is the weight vector for class $k$, ($x_i$, $y_i$) is the $i^{th}$ instance and 
+\begin{equation*}
+\Delta(y,k) = 
+    \begin{cases}
+    1 & \mbox{if } y\neq k,\\
+    0 & \mbox{otherwise}.
+    \end{cases}
+\end{equation*}
+
+To derive the SGD  algorithm, we first need to rewrite the objective function in Eq. \eqref{eq:multiclass2} into the form of $\sum_i g_i(w)$:
+\begin{equation*}
+\label{eq:multiclass}
+    \min_{w=\{w_k\}} \quad \sum^N_{i=1} \left(\frac{1}{2N} \sum^K_{k=1} w_k^T w_k + C  \left( \max_{k=1\ldots K} \left(\Delta(y_i, k)+w_k^Tx_i\right)-w^T_{y_i} x_i\right)\right),
+\end{equation*}
+so that 
+\begin{equation*}
+    g_i(w) =  \left(\frac{1}{2N} \sum^K_{k=1} w_k^T w_k + C  \left( \max_{k=1\ldots K} \left(\Delta(y_i, k)+w_k^Tx_i\right)-w^T_{y_i} x_i\right)\right). 
+\end{equation*}
+
+Now let's derive the sub-gradient of $g_i(w)$.
+Consider $\partial g_i(w)/ \partial w_k$, the partial sub-gradient of the first term of $g_i(w)$ is $w_k/N$.
+Regarding the second term, we have to consider several cases. 
+Let $$\tilde{y} = \arg\max_k \left(\Delta(y_i, k)+w^T_k x_i\right)$$. If $\tilde{y} = k$ and $y_i = k$, the partial sub-gradient of the second term is $C(x - x) = 0$. Therefore, 
+$\partial g_i(w)/ \partial w_k = w_k/N$ when $\tilde{y} = k$ and $y_i = k$. 
+
+How about other cases?
+
+\begin{enumerate}
+\item [a.] {[15 points]} Please complete the following formulation
+\begin{equation}
+\label{eq:grad}
+\frac{\partial g_i(w)}{\partial w_k} = \begin{cases}
+w_k/N     \hspace{5cm} & \mbox{if } \tilde{y} = k \mbox{ and } y_i = k\\
+\\
+{\color{red} w_k/N -Cx_i}    &\mbox{if } \tilde{y} \neq k \mbox{ and } y_i = k\\
+       \\
+     {\color{red} w_k/N + Cx_i}    &\mbox{if } \tilde{y} = k \mbox{ and } y_i \neq k\\
+       \\
+        {\color{red} w_k/N}    &\mbox{if } \tilde{y} \neq k \mbox{ and } y_i \neq k\\
+\end{cases}
+\end{equation}
+
+
+
+
+\item [b.]  {[15 points]} The SGD algorithm runs as follows:  
+
+\begin{algorithmic}
+\STATE \FOR {epoch = 0 $\ldots$ T}
+\FOR {$(\vec{x_i}, y_i)$ in $D$}
+ \FOR {k= 1 $\ldots$ K}
+   \STATE {$w_k\leftarrow w_k - \eta \  \partial g_i(w_k) / \partial w_k$}
+\ENDFOR
+\ENDFOR
+\ENDFOR
+\end{algorithmic}
+$\eta$ is the step size. The step size is a user specified parameter. Here, we can set it with a default value 0.01.
+
+
+Plug Eq. \eqref{eq:grad} in, we have:
+\begin{algorithmic}
+\STATE \FOR {epoch = 0 $\ldots$ T}
+\FOR {$(\vec{x_i}, y_i)$ in $D$}
+\STATE { $\tilde{y} = \arg\max_k \left(\Delta(y_i, k)+w^T_k x_i\right)$}
+\FOR {k= 1 $\ldots$ K}
+\STATE
+   \STATE {$w_k\leftarrow w_k - \eta ({\color{red} w_k/N } ) $}
+   
+\ENDFOR
+ \IF {$\tilde{y} \neq {y_i}$}
+ \STATE
+   \STATE {$w_{y_i}\leftarrow w_{y_i} - \eta ({\color{red}  -Cx_i} )$}
+    \STATE
+    \STATE {$w_{\tilde{y}}\leftarrow w_{\tilde{y}} - \eta ({\color{red}  +Cx_i} )  $}
+
+\ENDIF
+\ENDFOR
+\ENDFOR
+\end{algorithmic}
+Please, complete the above algorithm.
+
+\item[c.] {[20points]} Let's implement a baseline one-vs-all  multiclass algorithm and conduct experiments on MNIST dataset~\footnote{http://yann.lecun.com/exdb/mnist/}.  We provide a basic code framework at \url{https://github.com/uvanlp/HW1} to facilitate the implementation. However, you're welcomed to write your own code. If you want to use the code we provided, implement the one-vs-all algorithm in the main function of one\_vs\_all\_with\_data\_reader.py. Then, conduct cross-validation to find the best C for all underlying binary classifier (assume the same C is used for all the binary classifiers). Note: You can use the LinearSVC class at Scikit-Learn,  \url{http://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html}, to implement the underlying classifiers.
+
+Report the best C and the final accuracy.
+
+\item[d.] {[25points]} Implement the SGD algorithm for multi-class SVM. We provide `multiclass\_svm.py' as the code framework. However, you have to implement the update rules. Conduct cross-validation to find the best C and report the result on the test set.\footnote{ To test if your algorithm implementation is correct, you can check if the objective function value of the SGD algorithm matches with the score from liblinear  https://www.csie.ntu.edu.tw/~cjlin/liblinear. Use the following command line to train a multi-class SVM model
+``./train  -s 4 -B -1 -e 0.01 -C 1 train.data'' with C=1.
+There is a function in the sample code allows you to print data in liblinear format. Check if the objective function values of your implementation is the same as that of liblinear on a small subset  (e.g., run on only the first 100 samples).}
+\item[e.] {[0-10 points]} We will give bonus points for additional  experiments.
+\end{enumerate}
+
+\end{document}
